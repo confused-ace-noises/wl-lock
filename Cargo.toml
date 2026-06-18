@@ -1,0 +1,15 @@
+[package]
+name = "wl-lock"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wayland-client = "0.31.14"
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+wayland-protocols-wlr = { version = "0.3.12", features = ["client"] }
+raw-window-handle = "0.6.2"
+wgpu = "29.0.3"
+rustix = { version = "1.1.4", features = ["shm"] }
+
+libc = "0.2.186"
+pam = "*"
