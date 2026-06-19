@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ffi::os_str::Display};
 
-use wayland_client::{Connection, Dispatch, EventQueue, Proxy, QueueHandle, delegate_noop, protocol::{wl_buffer::WlBuffer, wl_compositor::WlCompositor, wl_output::WlOutput, wl_registry::WlRegistry, wl_shm::WlShm, wl_shm_pool::WlShmPool, wl_surface::WlSurface}};
+use wayland_client::{Connection, Dispatch, EventQueue, Proxy, QueueHandle, delegate_noop, protocol::{wl_buffer::WlBuffer, wl_compositor::WlCompositor, wl_display::WlDisplay, wl_output::WlOutput, wl_registry::WlRegistry, wl_shm::WlShm, wl_shm_pool::WlShmPool, wl_surface::WlSurface}};
 use wayland_protocols::ext::session_lock::v1::client::ext_session_lock_manager_v1::ExtSessionLockManagerV1;
 
 use crate::{Output, Seat, utils::{global::Global, late::Late}};
@@ -12,6 +12,7 @@ pub mod seat;
 pub struct App {
     pub connection: Connection,
     pub event_queue: EventQueue<State>,
+    pub display: WlDisplay,
     pub state: State,
 }
 
@@ -47,7 +48,7 @@ impl App {
 
         state.init_done = true;
 
-        App { connection: conn, event_queue, state }
+        App { connection: conn, event_queue, state, display }
     }    
 }
 
