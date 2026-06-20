@@ -43,8 +43,12 @@ impl Dispatch<ExtSessionLockSurfaceV1, u32> for State {
         match event {
             ext_session_lock_surface_v1::Event::Configure { serial, width, height } => {
                 let output = state.outputs.get_mut(data).unwrap();
-                output.height = height;
-                output.width = width;
+                
+                assert!(output.surface_info.is_init());
+
+                output.surface_info.height.init(height);
+                output.surface_info.width.init(width);
+                
                 output.configured = true;
                 proxy.ack_configure(serial);
             },
