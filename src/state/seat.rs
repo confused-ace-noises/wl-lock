@@ -1,7 +1,6 @@
 use core::panic;
 use egui::{Modifiers, MouseWheelUnit, PointerButton, Pos2, TouchPhase, Vec2};
-use libc::mmap;
-use std::{collections::HashMap, os::fd::AsRawFd, ptr};
+use std::{os::fd::AsRawFd, ptr};
 use wayland_client::{
     Connection, Dispatch, Proxy, WEnum,
     protocol::{
@@ -202,11 +201,11 @@ impl Dispatch<WlKeyboard, ()> for State {
 impl Dispatch<WlPointer, ()> for State {
     fn event(
         state: &mut Self,
-        proxy: &WlPointer,
+        _proxy: &WlPointer,
         event: <WlPointer as Proxy>::Event,
-        data: &(),
-        conn: &Connection,
-        qhandle: &wayland_client::QueueHandle<Self>,
+        _data: &(),
+        _conn: &Connection,
+        _qhandle: &wayland_client::QueueHandle<Self>,
     ) {
         fn output(state: &mut State) -> &mut Output {
             state
@@ -255,7 +254,8 @@ impl Dispatch<WlPointer, ()> for State {
                 | wl_pointer::Event::AxisDiscrete { .. }
                 | wl_pointer::Event::AxisValue120 { .. }
                 | wl_pointer::Event::AxisStop { .. }
-                | wl_pointer::Event::AxisSource { .. } => {
+                | wl_pointer::Event::AxisSource { .. } 
+                | wl_pointer::Event::AxisRelativeDirection { .. } => {
                     let output = output(state);
 
                     let PointerEvent::Axis {
@@ -265,7 +265,14 @@ impl Dispatch<WlPointer, ()> for State {
                         mut is_stop
                     } = output
                         .last_pointer_axis_event
-                        .map(|x| output.pointer_events.remove(x))
+                        .and_then(|x| {
+                            if output.pointer_events.len() > x {
+                                Some(output.pointer_events.remove(x))
+                            } else {
+                                eprintln!("fuck");
+                                None
+                            }
+                        })
                         .unwrap_or(PointerEvent::Axis {
                             ordered_ev: Vec::new(),
                             source: None,
@@ -277,6 +284,7 @@ impl Dispatch<WlPointer, ()> for State {
                     };
 
                     let new_index = output.pointer_events.len();
+                    println!("ev: {event:?}");
                     match event {
                         wl_pointer::Event::Axis { .. } => available_modes |= 0b00000001,
                         wl_pointer::Event::AxisValue120 { .. } => available_modes |= 0b00000010,
@@ -310,6 +318,7 @@ impl Dispatch<WlPointer, ()> for State {
                     output.pointer_events.push(PointerEvent::Event(event));
                 }
             }
+            return;
         }
 
         for (_, output) in state.outputs.iter_mut() {
@@ -332,7 +341,7 @@ impl Dispatch<WlPointer, ()> for State {
                         }
 
                         wl_pointer::Event::Motion {
-                            time,
+                            time: _,
                             surface_x,
                             surface_y,
                         } => {
@@ -344,8 +353,8 @@ impl Dispatch<WlPointer, ()> for State {
                         }
 
                         wl_pointer::Event::Button {
-                            serial,
-                            time,
+                            serial: _,
+                            time: _,
                             button,
                             state: button_state,
                         } => {
@@ -380,7 +389,7 @@ impl Dispatch<WlPointer, ()> for State {
                             }
 
                         }
-                        _ => unimplemented!(),
+                        a => unimplemented!("{a:?}"),
                     },
 
                     PointerEvent::Axis {
@@ -392,6 +401,8 @@ impl Dispatch<WlPointer, ()> for State {
                         let is_axis120 = || available_modes & 0b0000010 == 0b0000010;
                         let is_axis_discrete = || available_modes & 0b0000100 == 0b0000100;
                         let is_axis = || available_modes & 0b0000001 == 0b0000001;
+
+                        println!("{available_modes:b}");
 
                         match source {
                             Some(AxisSource::Wheel) => {
@@ -434,7 +445,8 @@ impl Dispatch<WlPointer, ()> for State {
                                         }
                                     })
                                 } else {
-                                    unimplemented!("what should i do then???")
+                                    eprintln!("what should i do then???");
+                                    Vec2 { x: 0., y: 0. }
                                 };
 
                                 let mut should_be_stop = false;
@@ -451,6 +463,7 @@ impl Dispatch<WlPointer, ()> for State {
                                     phase: if should_be_stop { TouchPhase::End } else { TouchPhase::Move },
                                     modifiers: state.input.keyboard.as_ref().unwrap().key_mods,
                                 });
+                                output.last_pointer_axis_event = None;
                             }
                             Some(AxisSource::Continuous) | Some(AxisSource::Finger) | None => {
                                 let delta = if is_axis() {

@@ -46,7 +46,7 @@ impl Dispatch<WlRegistry, ()> for State {
                     },
 
                     "wl_output" => {
-                        let output: WlOutput = proxy.bind(name, version.min(4), qhandle, ());
+                        let output: WlOutput = proxy.bind(name, version.min(4), qhandle, name);
                         state.outputs.insert(name, Output::new_uninit(output, name));
                     }
 

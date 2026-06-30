@@ -27,3 +27,6 @@ pollster = "0.4.0"
 
 image = { version = "0.25", features = ["jpeg", "png"] }
 egui_extras = { version = "0.34.3", features = ["image"] }
+egui_alignments = "0.3.8"
+
+chrono = "0.4.45"
