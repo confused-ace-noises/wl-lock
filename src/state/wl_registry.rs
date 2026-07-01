@@ -50,9 +50,6 @@ impl Dispatch<WlRegistry, ()> for State {
                         state.outputs.insert(name, Output::new_uninit(output, name));
                     }
 
-                    //tmp
-                    "wl_shm" => Self::bind(&mut state.shm, proxy, name, qhandle, Self::MIN_WL_SHM_VER),
-
                     _ => {} // do nothing if it's not recognized
                 }
             }

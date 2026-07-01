@@ -5,7 +5,7 @@ use egui_wgpu::{Renderer, RendererOptions};
 use libc::{getpwuid_r, getuid, passwd};
 use wayland_client::{
     Connection, Dispatch, EventQueue, Proxy, QueueHandle, delegate_noop, protocol::{
-        wl_buffer::WlBuffer, wl_callback::WlCallback, wl_compositor::WlCompositor, wl_display::WlDisplay, wl_keyboard::WlKeyboard, wl_output::WlOutput, wl_pointer::{self, WlPointer}, wl_registry::WlRegistry, wl_seat::Capability, wl_shm::WlShm, wl_shm_pool::WlShmPool, wl_surface::WlSurface,
+        wl_buffer::WlBuffer, wl_callback::WlCallback, wl_compositor::WlCompositor, wl_display::WlDisplay, wl_keyboard::WlKeyboard, wl_output::WlOutput, wl_pointer::{self, WlPointer}, wl_registry::WlRegistry, wl_seat::Capability, wl_surface::WlSurface,
     },
 };
 use wayland_protocols::ext::session_lock::v1::client::{
@@ -35,7 +35,6 @@ pub struct App {
 #[derive(Default)]
 pub struct State {
     pub compositor: Late<Global<WlCompositor>>,
-    pub shm: Late<Global<WlShm>>,
     pub display_handle: Late<WaylandDisplayH>,
 
     pub seats: HashMap<u32, Seat>,
@@ -349,7 +348,6 @@ impl App {
         self.state.pam.init(Pam { uid, _buffer: buf, _passwd: pwd, _res: res, username });
     }
 
-    /// passwd argument will get cleared when called
     pub fn pam_auth(&self, passwd: &String) -> bool {
         let mut pam_client = pam::Client::with_password("login").expect("failed to start PAM client");
         pam_client.conversation_mut().set_credentials(&self.state.pam.username, passwd);
@@ -461,7 +459,6 @@ impl State {
     pub const MIN_WL_SEAT_VER: u32 = 9;
     pub const MIN_WL_SUBCOMPOSITOR_VER: u32 = 1;
     pub const MIN_ZWLR_LAYER_SHELL_VER: u32 = 4;
-    pub const MIN_WL_SHM_VER: u32 = 2;
 
     pub fn bind<T>(
         bind_to: &mut Late<Global<T>>,
@@ -479,10 +476,8 @@ impl State {
 
 delegate_noop!(State: WlCompositor);
 delegate_noop!(State: ExtSessionLockManagerV1);
-delegate_noop!(State: WlShmPool);
 
 delegate_noop!(State: ignore WlSurface);
-delegate_noop!(State: ignore WlShm);
 
 
 impl Dispatch<WlOutput, u32> for State {

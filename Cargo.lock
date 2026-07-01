@@ -1264,7 +1264,6 @@ dependencies = [
  "pam",
  "pollster",
  "raw-window-handle",
- "rustix",
  "wayland-backend",
  "wayland-client",
  "wayland-protocols",
